@@ -32,6 +32,17 @@ def _client() -> Client:
     return create_client(url, key)
 
 
+def _seed_empleados() -> list[dict]:
+    """Carga empleados iniciales desde config.py o desde st.secrets[seed]."""
+    if EMPLEADOS_INICIALES:
+        return EMPLEADOS_INICIALES
+    try:
+        seed = st.secrets.get("seed", {})
+        return list(seed.get("empleados", []))
+    except Exception:
+        return []
+
+
 def init_db() -> str:
     """Precarga empleados si la tabla esta vacia."""
     cli = _client()
@@ -39,17 +50,22 @@ def init_db() -> str:
     if res.data and len(res.data) > 0:
         return "Base de datos ya inicializada."
 
+    seed = _seed_empleados()
+    if not seed:
+        return ("Base de datos lista. Sin empleados precargados — "
+                "agregalos desde la pantalla \"Empleados\".")
+
     hoy = datetime.now().strftime("%Y-%m-%d")
     rows = [
         {
             "nombre": e["nombre"],
-            "sueldo_mensual": e["sueldo"],
+            "sueldo_mensual": e.get("sueldo", e.get("sueldo_mensual", 0)),
             "activo": "SI",
-            "modo_pago": e["modo_pago"],
+            "modo_pago": e.get("modo_pago", "quincenal"),
             "fecha_alta": hoy,
-            "notas": e["notas"],
+            "notas": e.get("notas", ""),
         }
-        for e in EMPLEADOS_INICIALES
+        for e in seed
     ]
     cli.table(TABLA_EMPLEADOS).insert(rows).execute()
     return f"{len(rows)} empleados precargados."
