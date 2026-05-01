@@ -18,19 +18,11 @@ DIA_PAGO_SEGUNDA = 5
 SHEET_EMPLEADOS = "EMPLEADOS"
 SHEET_LIQUIDACIONES = "LIQUIDACIONES"
 
-EMPLEADOS_INICIALES = [
-    {"nombre": "SEBASTIAN",  "sueldo": 1100000.00, "modo_pago": "quincenal", "notas": "Sueldo en blanco, varía mes a mes"},
-    {"nombre": "AGUSTIN",    "sueldo": 1003241.54, "modo_pago": "quincenal", "notas": ""},
-    {"nombre": "JONATHAN",   "sueldo": 1003241.54, "modo_pago": "quincenal", "notas": ""},
-    {"nombre": "FRANCO",     "sueldo": 1003241.54, "modo_pago": "quincenal", "notas": ""},
-    {"nombre": "GONZALO1",   "sueldo": 1003241.54, "modo_pago": "quincenal", "notas": ""},
-    {"nombre": "SANDRA",     "sueldo": 1250000.00, "modo_pago": "mensual",   "notas": "Cobra mes completo el día 5"},
-    {"nombre": "NAHUEL",     "sueldo":  801248.00, "modo_pago": "quincenal", "notas": ""},
-    {"nombre": "EZEQUIEL",   "sueldo":  842000.00, "modo_pago": "quincenal", "notas": ""},
-    {"nombre": "JOEL",       "sueldo":  750000.00, "modo_pago": "quincenal", "notas": ""},
-    {"nombre": "CRISTIAN",   "sueldo":  750000.00, "modo_pago": "quincenal", "notas": ""},
-    {"nombre": "GONZALO2",   "sueldo":  750000.00, "modo_pago": "quincenal", "notas": ""},
-]
+# Lista de empleados iniciales (vacia por defecto en el repo publico).
+# Los empleados ya estan cargados en Supabase. Si necesitas re-seedear
+# en una base nueva, agregalos desde la pantalla "Empleados" o configurá
+# [seed] en .streamlit/secrets.toml (ver secrets.toml.example).
+EMPLEADOS_INICIALES: list[dict] = []
 
 MESES = [
     "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
