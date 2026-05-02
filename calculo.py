@@ -1,4 +1,4 @@
- """Logica de calculo de la liquidacion quincenal y vacaciones."""
+"""Logica de calculo de la liquidacion quincenal y vacaciones."""
 
 from dataclasses import dataclass, asdict, field
 from typing import Optional
@@ -97,13 +97,6 @@ def calcular_bono_especial(
     """Bono 25% en funcion de horas especiales.
 
     Devuelve (bono_pagado, valor_hora_especial, horas_efectivas).
-
-    valor_hora_especial = (sueldo * 0,25) / 22
-    horas_efectivas     = 22 + hs_extra - hs_ausencia (minimo 0)
-    bono_pagado         = valor_hora_especial * horas_efectivas
-
-    Las hs_ausencia normales NO afectan al bono (solo descuentan del
-    sueldo regular). Solo hs_especiales_ausencia descuenta del bono.
     """
     bono_total = sueldo_mensual * porcentaje
     if horas_base <= 0:
