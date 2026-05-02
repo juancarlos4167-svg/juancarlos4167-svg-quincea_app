@@ -1,11 +1,12 @@
 """Logica de calculo de la liquidacion quincenal y vacaciones."""
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from typing import Optional
 
 from config import (
     DIVISOR_QUINCENA, DIVISOR_DIA, DIVISOR_DIA_VACACIONES, DIVISOR_HORA,
     COEF_HORA_50, COEF_HORA_100, DIAS_QUINCENA, JORNADA_HORAS,
+    MESES_BONO_ESPECIAL, BONO_ESPECIAL_PORCENTAJE, BONO_ESPECIAL_DIAS_PROMEDIO,
 )
 
 
@@ -28,6 +29,11 @@ class LiquidacionQuincena:
     importe_ausencias: float
     total_a_cobrar: float
     modo_pago: str
+    bono_especial_aplica: bool = False
+    bono_especial_importe: float = 0.0
+    bono_especial_valor_dia: float = 0.0
+    bono_especial_dias_efectivos: float = 0.0
+    bono_especial_dias_promedio: int = 0
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -71,6 +77,32 @@ def quincena_base(sueldo: float) -> float:
     return sueldo / DIVISOR_QUINCENA
 
 
+def aplica_bono_especial(mes: int, quincena: int, modo_pago: str) -> bool:
+    """El bono se paga en la 2da quincena de mayo, junio, julio y agosto.
+    No aplica al modo mensual (Sandra)."""
+    if modo_pago == "mensual":
+        return False
+    return mes in MESES_BONO_ESPECIAL and quincena == 2
+
+
+def calcular_bono_especial(
+    sueldo_mensual: float,
+    hs_ausencia_total_mes: float,
+    jornada_horas: float = JORNADA_HORAS,
+    dias_promedio: int = BONO_ESPECIAL_DIAS_PROMEDIO,
+    porcentaje: float = BONO_ESPECIAL_PORCENTAJE,
+) -> tuple[float, float, float]:
+    """Devuelve (bono_pagado, valor_dia_especial, dias_efectivos)."""
+    bono_total = sueldo_mensual * porcentaje
+    if dias_promedio <= 0:
+        return 0.0, 0.0, 0.0
+    valor_dia_especial = bono_total / dias_promedio
+    dias_ausencia = hs_ausencia_total_mes / jornada_horas if jornada_horas else 0
+    dias_efectivos = max(0.0, dias_promedio - dias_ausencia)
+    bono_pagado = valor_dia_especial * dias_efectivos
+    return bono_pagado, valor_dia_especial, dias_efectivos
+
+
 def calcular_quincena(
     nombre: str,
     sueldo_mensual: float,
@@ -79,11 +111,19 @@ def calcular_quincena(
     hs_ausencia: float = 0,
     adelantos: float = 0,
     modo_pago: str = "quincenal",
+    mes: int = 0,
+    quincena: int = 0,
+    hs_ausencia_q1: float = 0,
 ) -> LiquidacionQuincena:
     base = quincena_base(sueldo_mensual)
     vh = valor_hora(sueldo_mensual)
     vh50 = vh * COEF_HORA_50
     vh100 = vh * COEF_HORA_100
+
+    bono_aplica = False
+    bono_importe = 0.0
+    bono_valor_dia = 0.0
+    bono_dias_efectivos = 0.0
 
     if modo_pago == "mensual":
         total = sueldo_mensual
@@ -100,6 +140,14 @@ def calcular_quincena(
         importe_aus = hs_ausencia * vh
         total = base + importe_50 + importe_100 - importe_aus - adelantos
         dias_trab = max(0, DIAS_QUINCENA - int(round(hs_ausencia / JORNADA_HORAS)))
+
+        if aplica_bono_especial(mes, quincena, modo_pago):
+            hs_ausencia_total = (hs_ausencia_q1 or 0) + hs_ausencia
+            bono_importe, bono_valor_dia, bono_dias_efectivos = (
+                calcular_bono_especial(sueldo_mensual, hs_ausencia_total)
+            )
+            bono_aplica = True
+            total += bono_importe
 
     return LiquidacionQuincena(
         nombre=nombre,
@@ -119,6 +167,11 @@ def calcular_quincena(
         importe_ausencias=importe_aus,
         total_a_cobrar=total,
         modo_pago=modo_pago,
+        bono_especial_aplica=bono_aplica,
+        bono_especial_importe=bono_importe,
+        bono_especial_valor_dia=bono_valor_dia,
+        bono_especial_dias_efectivos=bono_dias_efectivos,
+        bono_especial_dias_promedio=BONO_ESPECIAL_DIAS_PROMEDIO if bono_aplica else 0,
     )
 
 
