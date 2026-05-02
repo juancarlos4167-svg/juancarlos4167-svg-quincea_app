@@ -135,11 +135,11 @@ def _draw_quincena_card(c: canvas.Canvas, x: float, y: float,
             adel_dia = meta.get("adelanto_fecha", "")
             label = f"Adelanto" + (f" ({adel_dia})" if adel_dia else "")
             linea(label, f"- {formato_pesos(liq.adelantos)}")
-        if liq.bono_especial_aplica and liq.bono_especial_importe > 0:
+                if liq.bono_especial_aplica and liq.bono_especial_importe > 0:
             linea_3col(
-                "Bono 25% (1 hs extra/dia lun-vie)",
-                f"{liq.bono_especial_dias_efectivos:g} d",
-                formato_pesos(liq.bono_especial_valor_dia),
+                "Bono 25% (hs especiales)",
+                f"{liq.bono_especial_horas_efectivas:g} hs",
+                formato_pesos(liq.bono_especial_valor_hora),
                 formato_pesos(liq.bono_especial_importe),
             )
 
