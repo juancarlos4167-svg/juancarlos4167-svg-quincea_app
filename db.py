@@ -20,6 +20,7 @@ LIQUIDACIONES_COLS = [
     "id", "empleado_id", "tipo", "anio", "mes", "quincena",
     "fecha_pago", "fecha_inicio_vac", "fecha_fin_vac",
     "hs_50", "hs_100", "hs_ausencia", "dias_vacaciones",
+    "hs_especiales_extra", "hs_especiales_ausencia",
     "adelantos", "total_calculado", "total_pagado",
     "estado", "observaciones", "updated_at",
 ]
@@ -71,7 +72,6 @@ def init_db() -> str:
     return f"{len(rows)} empleados precargados."
 
 
-# Compat con codigo previo que llamaba init_sheets()
 def init_sheets() -> str:
     return init_db()
 
@@ -134,7 +134,6 @@ def desactivar_empleado(emp_id: int) -> None:
 
 
 def _fecha_o_none(valor):
-    """Devuelve la fecha como string ISO o None si esta vacia."""
     if valor is None:
         return None
     if isinstance(valor, str):
@@ -152,8 +151,9 @@ def _df_liquidaciones(data: list[dict]) -> pd.DataFrame:
             df[col] = None
     for col in ["id", "empleado_id", "anio", "mes", "quincena", "dias_vacaciones"]:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
-    for col in ["hs_50", "hs_100", "hs_ausencia", "adelantos",
-                "total_calculado", "total_pagado"]:
+    for col in ["hs_50", "hs_100", "hs_ausencia",
+                "hs_especiales_extra", "hs_especiales_ausencia",
+                "adelantos", "total_calculado", "total_pagado"]:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
     for col in ["tipo", "fecha_pago", "fecha_inicio_vac", "fecha_fin_vac",
                 "estado", "observaciones", "updated_at"]:
@@ -202,6 +202,8 @@ def upsert_liquidacion(liq: dict) -> int:
         "hs_100": float(liq.get("hs_100", 0) or 0),
         "hs_ausencia": float(liq.get("hs_ausencia", 0) or 0),
         "dias_vacaciones": int(liq.get("dias_vacaciones", 0) or 0),
+        "hs_especiales_extra": float(liq.get("hs_especiales_extra", 0) or 0),
+        "hs_especiales_ausencia": float(liq.get("hs_especiales_ausencia", 0) or 0),
         "adelantos": float(liq.get("adelantos", 0) or 0),
         "total_calculado": float(liq.get("total_calculado", 0) or 0),
         "total_pagado": float(liq.get("total_pagado", 0) or 0),
