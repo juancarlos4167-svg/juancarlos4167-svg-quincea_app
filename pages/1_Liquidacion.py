@@ -36,13 +36,15 @@ es_mes_especial_bono = mes in MESES_BONO_ESPECIAL
 if es_mes_especial_bono and quincena == 2:
     st.success(
         f"🌟 **{MESES[mes]} es un mes con bono especial 25%**: en esta 2ª quincena se "
-        "paga el plus por la hora extra diaria de lun-vie. La app suma sola las "
-        "ausencias de ambas quincenas para el cálculo del prorrateo."
+        "paga el plus por la hora extra diaria de lun-vie. Cargá las **horas especiales** "
+        "(extras de sábado, ausencias) en cada empleado. La app suma los valores de la "
+        "1ª y 2ª quincena automáticamente."
     )
 elif es_mes_especial_bono and quincena == 1:
     st.info(
-        f"ℹ️ {MESES[mes]} es un mes con bono especial 25%. El bono se paga en la "
-        "**2ª quincena**, no en esta."
+        f"ℹ️ {MESES[mes]} es un mes con bono especial 25%. Podés cargar las **horas "
+        "especiales** (extras de sábado, ausencias) ahora; el bono se paga recién en la "
+        "**2ª quincena**, sumando los valores de las dos."
     )
 
 dia_pago = DIA_PAGO_PRIMERA if quincena == 1 else DIA_PAGO_SEGUNDA
@@ -74,11 +76,13 @@ for _, emp in empleados_filtrados.iterrows():
 
     existente = buscar_liquidacion(emp_id, "quincena", anio, mes, quincena)
 
-    hs_ausencia_q1 = 0.0
-    if quincena == 2 and modo != "mensual":
+    hs_especiales_extra_q1 = 0.0
+    hs_especiales_ausencia_q1 = 0.0
+    if quincena == 2 and modo != "mensual" and es_mes_especial_bono:
         liq_q1 = buscar_liquidacion(emp_id, "quincena", anio, mes, 1)
         if liq_q1:
-            hs_ausencia_q1 = float(liq_q1.get("hs_ausencia", 0) or 0)
+            hs_especiales_extra_q1 = float(liq_q1.get("hs_especiales_extra", 0) or 0)
+            hs_especiales_ausencia_q1 = float(liq_q1.get("hs_especiales_ausencia", 0) or 0)
 
     with st.expander(f"👤 {nombre}  —  Sueldo: {formato_pesos(sueldo)}  ({modo})",
                      expanded=False):
@@ -94,6 +98,7 @@ for _, emp in empleados_filtrados.iterrows():
             st.markdown(f"### Total a cobrar: **{formato_pesos(liq.total_a_cobrar)}**")
             adelantos_input = 0.0
             hs50 = hs100 = hsaus = 0.0
+            hs_esp_extra = hs_esp_aus = 0.0
         else:
             sueldo_editable = sueldo
             if nombre.upper() == "SEBASTIAN":
@@ -115,15 +120,41 @@ for _, emp in empleados_filtrados.iterrows():
             with cC:
                 hsaus = st.number_input("Hs ausencia / retiro", min_value=0.0, step=0.5,
                                         value=float(existente["hs_ausencia"]) if existente else 0.0,
-                                        key=f"haus_{emp_id}")
+                                        key=f"haus_{emp_id}",
+                                        help="Descuenta del sueldo regular (no del bono 25%).")
             with cD:
                 adelantos_input = st.number_input("Adelantos $", min_value=0.0, step=1000.0,
                                                   value=float(existente["adelantos"]) if existente else 0.0,
                                                   key=f"adel_{emp_id}", format="%.2f")
+
+            hs_esp_extra = 0.0
+            hs_esp_aus = 0.0
+            if es_mes_especial_bono:
+                st.markdown("**🌟 Horas especiales (mayo–agosto)**")
+                ce1, ce2 = st.columns(2)
+                with ce1:
+                    hs_esp_extra = st.number_input(
+                        "Hs especiales extra (sábados)", min_value=0.0, step=0.5,
+                        value=float(existente["hs_especiales_extra"]) if existente and "hs_especiales_extra" in existente else 0.0,
+                        key=f"hesp_extra_{emp_id}",
+                        help="Suma al bono 25%. Cargá las horas extras de sábados de esta quincena.",
+                    )
+                with ce2:
+                    hs_esp_aus = st.number_input(
+                        "Hs especiales ausencia", min_value=0.0, step=0.5,
+                        value=float(existente["hs_especiales_ausencia"]) if existente and "hs_especiales_ausencia" in existente else 0.0,
+                        key=f"hesp_aus_{emp_id}",
+                        help="Resta del bono 25%. Cargá 1h por cada día completo que faltó (la hora especial perdida).",
+                    )
+
             liq = calcular_quincena(
                 nombre, sueldo_editable, hs_50=hs50, hs_100=hs100,
                 hs_ausencia=hsaus, adelantos=adelantos_input, modo_pago="quincenal",
-                mes=int(mes), quincena=int(quincena), hs_ausencia_q1=hs_ausencia_q1,
+                mes=int(mes), quincena=int(quincena),
+                hs_especiales_extra=hs_esp_extra,
+                hs_especiales_ausencia=hs_esp_aus,
+                hs_especiales_extra_q1=hs_especiales_extra_q1,
+                hs_especiales_ausencia_q1=hs_especiales_ausencia_q1,
             )
 
             mc1, mc2, mc3, mc4 = st.columns(4)
@@ -136,15 +167,15 @@ for _, emp in empleados_filtrados.iterrows():
                 bc1, bc2, bc3 = st.columns(3)
                 bc1.metric("🌟 Bono 25%",
                            formato_pesos(liq.bono_especial_importe))
-                bc2.metric("Días efectivos",
-                           f"{liq.bono_especial_dias_efectivos:g} / "
-                           f"{liq.bono_especial_dias_promedio}")
-                bc3.metric("Valor por día especial",
-                           formato_pesos(liq.bono_especial_valor_dia))
-                if hs_ausencia_q1 > 0:
+                bc2.metric("Horas efectivas",
+                           f"{liq.bono_especial_horas_efectivas:g} / "
+                           f"{liq.bono_especial_horas_base}")
+                bc3.metric("Valor por hora especial",
+                           formato_pesos(liq.bono_especial_valor_hora))
+                if hs_especiales_extra_q1 or hs_especiales_ausencia_q1:
                     st.caption(
-                        f"💡 Se descontaron {hs_ausencia_q1:g} hs de ausencia de la "
-                        f"1ª quincena del mismo mes."
+                        f"💡 Sumando 1ª quincena: extra +{hs_especiales_extra_q1:g}h, "
+                        f"ausencia -{hs_especiales_ausencia_q1:g}h."
                     )
 
             st.markdown(f"### Total a cobrar: **{formato_pesos(liq.total_a_cobrar)}**")
@@ -156,7 +187,7 @@ for _, emp in empleados_filtrados.iterrows():
             obs_final = observaciones
             if liq.bono_especial_aplica and liq.bono_especial_importe > 0:
                 bono_nota = (f"Bono 25% {MESES[mes]}: {formato_pesos(liq.bono_especial_importe)} "
-                             f"({liq.bono_especial_dias_efectivos:g} días efectivos)")
+                             f"({liq.bono_especial_horas_efectivas:g} hs efectivas)")
                 obs_final = f"{observaciones} | {bono_nota}".strip(" |") if observaciones else bono_nota
             payload = {
                 "id": existente["id"] if existente else None,
@@ -172,6 +203,8 @@ for _, emp in empleados_filtrados.iterrows():
                 "hs_100": float(hs100),
                 "hs_ausencia": float(hsaus),
                 "dias_vacaciones": 0,
+                "hs_especiales_extra": float(hs_esp_extra),
+                "hs_especiales_ausencia": float(hs_esp_aus),
                 "adelantos": float(adelantos_input),
                 "total_calculado": round(liq.total_a_cobrar, 2),
                 "total_pagado": round(liq.total_a_cobrar, 2),
