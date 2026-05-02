@@ -15,6 +15,14 @@ JORNADA_HORAS = 8
 DIA_PAGO_PRIMERA = 20
 DIA_PAGO_SEGUNDA = 5
 
+# Bono especial: durante mayo, junio, julio y agosto los empleados de
+# lunes a viernes trabajan una hora mas por dia. Por ese esfuerzo cobran
+# un 25% del sueldo mensual, prorrateado por dias trabajados, en la 2da
+# quincena de cada uno de esos meses.
+MESES_BONO_ESPECIAL = [5, 6, 7, 8]
+BONO_ESPECIAL_PORCENTAJE = 0.25
+BONO_ESPECIAL_DIAS_PROMEDIO = 22
+
 SHEET_EMPLEADOS = "EMPLEADOS"
 SHEET_LIQUIDACIONES = "LIQUIDACIONES"
 
