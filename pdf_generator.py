@@ -55,7 +55,7 @@ def _draw_quincena_card(c: canvas.Canvas, x: float, y: float,
     c.setFont("Helvetica", 8)
     titulo_periodo = f"{meta.get('quincena_label','')}  {meta.get('mes_label','')} {meta.get('anio','')}"
     c.drawRightString(x + CARD_W - pad, cur_y - 6 * mm, titulo_periodo)
-    cur_y -= 11 * mm
+    cur_y -= 14 * mm
 
     c.setFillColor(colors.black)
     c.setFont("Helvetica-Bold", 12)
@@ -179,7 +179,7 @@ def _draw_vacaciones_card(c: canvas.Canvas, x: float, y: float,
     else:
         rango = ""
     c.drawRightString(x + CARD_W - pad, cur_y - 6 * mm, rango)
-    cur_y -= 11 * mm
+    cur_y -= 14 * mm
 
     c.setFillColor(colors.black)
     c.setFont("Helvetica-Bold", 12)
